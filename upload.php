@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Function to create highlight using FFmpeg
 function createHighlight($filePath) {
     $highlightPath = 'highlights/highlight_' . basename($filePath);
-
+    var_dump($filePath);
     // Example command to extract highlights (first 30 seconds)
     $command = "ffmpeg -i $filePath -ss 00:00:00 -t 00:00:30 -c copy $highlightPath";
 
