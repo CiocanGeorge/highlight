@@ -56,7 +56,7 @@ function createHighlight($filePath) {
     $highlightPath = 'highlights/highlight_' . basename($filePath);
     var_dump($filePath);
     // Example command to extract highlights (first 30 seconds)
-    $command = "ffmpeg -i $filePath -ss 00:00:00 -t 00:00:30 -c copy $highlightPath";
+    $command = "ffmpeg -i /var/www/html/highlight/$filePath -ss 00:00:00 -t 00:00:30 -c copy $highlightPath";
 
     // Execute the command
     exec($command, $output, $return_var);
