@@ -6,8 +6,8 @@
 </head>
 <body>
     <form action="upload.php" method="post" enctype="multipart/form-data">
-        Select video to upload:
-        <input type="file" name="video" id="video">
+        <label for="video">Select video to upload:</label>
+        <input type="file" name="video" id="video" accept="video/*">
         <input type="submit" value="Upload Video" name="submit">
     </form>
 </body>
