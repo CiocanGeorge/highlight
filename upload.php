@@ -1,5 +1,7 @@
 <?php
 echo "ajunge aici";
+var_dump($_SERVER['REQUEST_METHOD'] == 'POST');
+var_dump(isset($_FILES['video']));
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['video'])) {
     echo "ajunge aici2";
     $target_dir = "uploads/";
