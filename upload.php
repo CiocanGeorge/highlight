@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             if (move_uploaded_file($_FILES["video"]["tmp_name"], $target_file)) {
                 echo "The file ". htmlspecialchars(basename($_FILES["video"]["name"])). " has been uploaded.";
-                createHighlight($target_file);
+                createHighlights($target_file);
             } else {
                 echo "Sorry, there was an error uploading your file.";
             }
@@ -43,28 +43,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Function to create highlight using FFmpeg
-function createHighlight($filePath) {
-    $highlightPath = 'highlights/highlight_' . basename($filePath);
-
-    // Example command to extract highlights (first 30 seconds)
-    $command = "ffmpeg -i $filePath -ss 00:00:00 -t 00:00:30 -c copy $highlightPath 2>&1";
-
-    // Execute the command
+// Function to create highlights using FFmpeg
+function createHighlights($filePath) {
+    // Get video duration
+    $command = "ffmpeg -i $filePath 2>&1";
     exec($command, $output, $return_var);
+    $duration = 0;
+    foreach ($output as $line) {
+        if (preg_match('/Duration: (\d+):(\d+):(\d+\.\d+)/', $line, $matches)) {
+            $hours = (int)$matches[1];
+            $minutes = (int)$matches[2];
+            $seconds = (float)$matches[3];
+            $duration = $hours * 3600 + $minutes * 60 + $seconds;
+            break;
+        }
+    }
 
-    // Debug information
-    echo "<pre>";
-    echo "Command: $command\n";
-    echo "Return var: $return_var\n";
-    echo "Output:\n";
-    print_r($output);
-    echo "</pre>";
+    // Create 1-minute clips
+    $start = 0;
+    $part = 1;
+    while ($start < $duration) {
+        $highlightPath = 'highlights/highlight_part' . $part . '_' . basename($filePath);
+        $command = "ffmpeg -i $filePath -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -c copy $highlightPath 2>&1";
+        exec($command, $output, $return_var);
 
-    if ($return_var == 0) {
-        echo "Highlight created successfully: $highlightPath";
-    } else {
-        echo "Error creating highlight.";
+        echo "<pre>";
+        echo "Command: $command\n";
+        echo "Return var: $return_var\n";
+        echo "Output:\n";
+        print_r($output);
+        echo "</pre>";
+
+        if ($return_var == 0) {
+            echo "Highlight created successfully: $highlightPath";
+        } else {
+            echo "Error creating highlight.";
+        }
+
+        $start += 60; // move to the next minute
+        $part++;
     }
 }
 ?>
