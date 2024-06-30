@@ -33,7 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             if (move_uploaded_file($_FILES["video"]["tmp_name"], $target_file)) {
                 echo "The file ". htmlspecialchars(basename($_FILES["video"]["name"])). " has been uploaded.";
-                createHighlights($target_file);
+
+                // Check if checkbox for adding text is checked
+                if (isset($_POST['addText']) && $_POST['addText'] == 'yes') {
+                    createHighlightsWithText($target_file);
+                } else {
+                    createHighlights($target_file);
+                }
             } else {
                 echo "Sorry, there was an error uploading your file.";
             }
@@ -60,11 +66,31 @@ function createHighlights($filePath) {
     }
 
     // Start creating highlights sequentially
-    createNextHighlight($filePath, 0, $duration, 1);
+    createNextHighlight($filePath, 0, $duration, 1, false); // false indicates no text
+}
+
+// Function to create highlights with text using FFmpeg
+function createHighlightsWithText($filePath) {
+    // Get video duration
+    $command = "ffmpeg -i \"$filePath\" 2>&1";
+    exec($command, $output, $return_var);
+    $duration = 0;
+    foreach ($output as $line) {
+        if (preg_match('/Duration: (\d+):(\d+):(\d+\.\d+)/', $line, $matches)) {
+            $hours = (int)$matches[1];
+            $minutes = (int)$matches[2];
+            $seconds = (float)$matches[3];
+            $duration = $hours * 3600 + $minutes * 60 + $seconds;
+            break;
+        }
+    }
+
+    // Start creating highlights with text sequentially
+    createNextHighlight($filePath, 0, $duration, 1, true); // true indicates adding text
 }
 
 // Function to create highlights sequentially
-function createNextHighlight($filePath, $start, $duration, $part) {
+function createNextHighlight($filePath, $start, $duration, $part, $addText) {
     if ($start >= $duration) {
         echo "All highlights created successfully.";
         return;
@@ -83,9 +109,13 @@ function createNextHighlight($filePath, $start, $duration, $part) {
 
     if ($return_var == 0) {
         echo "Highlight created successfully: $highlightPath";
-        addTextToHighlight($highlightPath, $part, function () use ($filePath, $start, $duration, $part) {
-            createNextHighlight($filePath, $start + 60, $duration, $part + 1);
-        });
+        if ($addText) {
+            addTextToHighlight($highlightPath, $part, function () use ($filePath, $start, $duration, $part, $addText) {
+                createNextHighlight($filePath, $start + 60, $duration, $part + 1, $addText);
+            });
+        } else {
+            createNextHighlight($filePath, $start + 60, $duration, $part + 1, $addText);
+        }
     } else {
         echo "Error creating highlight.";
     }
