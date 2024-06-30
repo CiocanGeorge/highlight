@@ -59,38 +59,51 @@ function createHighlights($filePath) {
         }
     }
 
-    // Create 1-minute clips
-    $start = 0;
-    $part = 1;
-    while ($start < $duration) {
-        $highlightPath = 'highlights/highlight_part' . $part . '_' . basename($filePath);
-        $command = "ffmpeg -i \"$filePath\" -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -c copy \"$highlightPath\" 2>&1";
-        exec($command, $output, $return_var);
+    // Start creating highlights sequentially
+    createNextHighlight($filePath, 0, $duration, 1);
+}
 
-        echo "<pre>";
-        echo "Command: $command\n";
-        echo "Return var: $return_var\n";
-        echo "Output:\n";
-        print_r($output);
-        echo "</pre>";
+// Function to create highlights sequentially
+function createNextHighlight($filePath, $start, $duration, $part) {
+    if ($start >= $duration) {
+        echo "All highlights created successfully.";
+        return;
+    }
 
-        if ($return_var == 0) {
-            echo "Highlight created successfully: $highlightPath";
-            addTextToHighlight($highlightPath, $part);
-        } else {
-            echo "Error creating highlight.";
-        }
+    $highlightPath = 'highlights/highlight_part' . $part . '_' . basename($filePath);
+    $command = "ffmpeg -i \"$filePath\" -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -c copy \"$highlightPath\" 2>&1";
+    exec($command, $output, $return_var);
 
-        $start += 60; // move to the next minute
-        $part++;
+    echo "<pre>";
+    echo "Command: $command\n";
+    echo "Return var: $return_var\n";
+    echo "Output:\n";
+    print_r($output);
+    echo "</pre>";
+
+    if ($return_var == 0) {
+        echo "Highlight created successfully: $highlightPath";
+        addTextToHighlight($highlightPath, $part, function () use ($filePath, $start, $duration, $part) {
+            createNextHighlight($filePath, $start + 60, $duration, $part + 1);
+        });
+    } else {
+        echo "Error creating highlight.";
     }
 }
 
 // Function to add text to highlight
-function addTextToHighlight($filePath, $part) {
+function addTextToHighlight($filePath, $part, $callback) {
     $text = "Partea $part";
     $outputPath = str_replace('highlight_part', 'highlight_with_text_part', $filePath);
-    $command = "ffmpeg -i \"$filePath\" -vf \"drawtext=text='$text':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=24:x=10:y=10\" -c:a copy \"$outputPath\" 2>&1";
+    
+    // Check if the font file exists
+    $fontFile = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+    if (!file_exists($fontFile)) {
+        echo "Font file does not exist: $fontFile";
+        return;
+    }
+
+    $command = "ffmpeg -i \"$filePath\" -vf \"drawtext=text='$text':fontfile=$fontFile:fontcolor=white:fontsize=24:x=10:y=10\" -c:a copy \"$outputPath\" 2>&1";
     exec($command, $output, $return_var);
 
     echo "<pre>";
@@ -102,6 +115,8 @@ function addTextToHighlight($filePath, $part) {
 
     if ($return_var == 0) {
         echo "Text added successfully: $outputPath";
+        // Execute the callback function
+        $callback();
     } else {
         echo "Error adding text to highlight.";
     }
