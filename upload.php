@@ -59,13 +59,12 @@ function createHighlights($filePath) {
         }
     }
 
-    // Create 1-minute clips with text overlay
+    // Create 1-minute clips
     $start = 0;
     $part = 1;
     while ($start < $duration) {
         $highlightPath = 'highlights/highlight_part' . $part . '_' . basename($filePath);
-        $text = "Partea $part";
-        $command = "ffmpeg -i \"$filePath\" -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -vf \"drawtext=text='$text':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=24:x=10:y=10\" -c:a copy \"$highlightPath\" 2>&1";
+        $command = "ffmpeg -i \"$filePath\" -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -c copy \"$highlightPath\" 2>&1";
         exec($command, $output, $return_var);
 
         echo "<pre>";
@@ -77,12 +76,34 @@ function createHighlights($filePath) {
 
         if ($return_var == 0) {
             echo "Highlight created successfully: $highlightPath";
+            addTextToHighlight($highlightPath, $part);
         } else {
             echo "Error creating highlight.";
         }
 
         $start += 60; // move to the next minute
         $part++;
+    }
+}
+
+// Function to add text to highlight
+function addTextToHighlight($filePath, $part) {
+    $text = "Partea $part";
+    $outputPath = str_replace('highlight_part', 'highlight_with_text_part', $filePath);
+    $command = "ffmpeg -i \"$filePath\" -vf \"drawtext=text='$text':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=24:x=10:y=10\" -c:a copy \"$outputPath\" 2>&1";
+    exec($command, $output, $return_var);
+
+    echo "<pre>";
+    echo "Command: $command\n";
+    echo "Return var: $return_var\n";
+    echo "Output:\n";
+    print_r($output);
+    echo "</pre>";
+
+    if ($return_var == 0) {
+        echo "Text added successfully: $outputPath";
+    } else {
+        echo "Error adding text to highlight.";
     }
 }
 ?>
