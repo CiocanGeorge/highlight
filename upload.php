@@ -65,7 +65,7 @@ function createHighlights($filePath) {
     while ($start < $duration) {
         $highlightPath = 'highlights/highlight_part' . $part . '_' . basename($filePath);
         $text = "Partea $part";
-        $command = "ffmpeg -i $filePath -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -vf \"drawtext=text='$text':fontcolor=white:fontsize=24:x=10:y=10\" -c:a copy $highlightPath 2>&1";
+        $command = "ffmpeg -i $filePath -ss " . gmdate("H:i:s", $start) . " -t 00:01:00 -vf \"drawtext=text='$text':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=24:x=10:y=10\" -c:a copy $highlightPath 2>&1";
         exec($command, $output, $return_var);
 
         echo "<pre>";
